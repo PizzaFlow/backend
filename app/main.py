@@ -1,7 +1,5 @@
-import logging
 from fastapi import FastAPI
-from starlette.middleware.base import BaseHTTPMiddleware
-from app.api.routes import router
+from app.api.router import router
 from app.core.database import init_db
 
 app = FastAPI()

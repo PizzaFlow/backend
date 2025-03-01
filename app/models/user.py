@@ -1,5 +1,13 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy.orm import relationship
 from app.core.database import Base
+
+user_pizza_association = Table(
+    "user_pizza_association",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("pizza_id", Integer, ForeignKey("pizzas.id"), primary_key=True),
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -8,3 +16,9 @@ class User(Base):
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+
+    orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
+    addresses = relationship("Address", back_populates="user", cascade="all, delete-orphan")
+
+    favorite_pizzas = relationship("Pizza", secondary=user_pizza_association, back_populates="liked_by_users")
