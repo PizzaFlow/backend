@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
-
 class Address(Base):
     __tablename__ = "addresses"
 
@@ -14,3 +13,4 @@ class Address(Base):
     apartment = Column(String, nullable=True)
 
     user = relationship("User", back_populates="addresses")
+    order = relationship("Order", back_populates="address", uselist=False)
