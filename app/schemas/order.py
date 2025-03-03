@@ -1,14 +1,20 @@
-# app/schemas.py
-from pydantic import BaseModel
-from typing import List, Optional
 from datetime import datetime
+from typing import List
 
-from app.schemas.user import UserResponse, AddressResponse, IngredientResponse, PizzaResponse
+from pydantic import BaseModel
 
-# Кастомизация ингредиентов в пицце заказа
+from app.models.order import DeliveryTimeEnum, PaymentMethodEnum
+from app.schemas.address import AddressResponse
+from app.schemas.ingredient import IngredientResponse
+from app.schemas.pizza import PizzaResponseForOrder
+from app.schemas.user import UserResponse
+
+
 class OrderPizzaIngredientBase(BaseModel):
     ingredient_id: int
     is_added: bool
+    count: int
+
 
 class OrderPizzaIngredientResponse(OrderPizzaIngredientBase):
     ingredient: IngredientResponse
@@ -16,27 +22,29 @@ class OrderPizzaIngredientResponse(OrderPizzaIngredientBase):
     class Config:
         from_attributes = True
 
-# Пицца в заказе (запрос — только ID и ингредиенты)
+
 class OrderPizzaBase(BaseModel):
     pizza_id: int
     ingredients: List[OrderPizzaIngredientBase]
 
-# Пицца в заказе (ответ — с рассчитанной ценой)
+
 class OrderPizzaResponse(BaseModel):
     id: int
-    pizza: PizzaResponse
+    pizza: PizzaResponseForOrder
     custom_price: float
     ingredients: List[OrderPizzaIngredientResponse]
 
     class Config:
         from_attributes = True
 
-# Создание заказа (запрос — без status и user_id)
+
 class OrderCreate(BaseModel):
     address_id: int
     pizzas: List[OrderPizzaBase]
+    delivery_time: DeliveryTimeEnum
+    payment_method: PaymentMethodEnum
 
-# Ответ с деталями заказа
+
 class OrderResponse(BaseModel):
     id: int
     user: UserResponse
@@ -44,8 +52,9 @@ class OrderResponse(BaseModel):
     status: str
     price: float
     created_at: datetime
-    delivery_time: Optional[datetime] = None
+    delivery_time: DeliveryTimeEnum
     pizzas: List[OrderPizzaResponse]
+    payment_method: PaymentMethodEnum
 
     class Config:
         from_attributes = True

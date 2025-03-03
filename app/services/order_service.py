@@ -1,15 +1,15 @@
-# app/crud.py
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
 from app.models import User, Pizza, Ingredient, Address
 from app.models.order import Order, OrderPizza, OrderPizzaIngredient
 from app.schemas.order import OrderCreate, OrderResponse
-from fastapi import HTTPException
+
 
 async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) -> OrderResponse:
     try:
-        # Проверяем существование пользователя и адреса
         user = await db.get(User, user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -18,33 +18,35 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
         if not address or address.user_id != user_id:
             raise HTTPException(status_code=404, detail="Address not found or does not belong to user")
 
-        total_price = 0.0  # Итоговая стоимость заказа
+        total_price = 0.0
 
-        # Создаём заказ
         new_order = Order(
             user_id=user_id,
             address_id=order_data.address_id,
-            status="created",  # Автоматически "created"
-            price=0.0  # Временно, обновим позже
+            status="created",
+            price=0.0,
+            delivery_time=order_data.delivery_time,
+            payment_method=order_data.payment_method
         )
         db.add(new_order)
-        await db.flush()  # Сохраняем заказ, чтобы получить его ID
+        await db.flush()
 
-        # Создаём пиццы в заказе
         for pizza_data in order_data.pizzas:
-            # Проверяем существование пиццы
+
             pizza = await db.get(Pizza, pizza_data.pizza_id)
             if not pizza:
                 raise HTTPException(status_code=404, detail=f"Pizza with id {pizza_data.pizza_id} not found")
 
-            # Рассчитываем цену: базовая цена пиццы + стоимость добавленных ингредиентов
-            custom_price = float(pizza.price)  # Базовая цена из таблицы pizzas
+            custom_price = float(pizza.price)
             for ingredient_data in pizza_data.ingredients:
                 ingredient = await db.get(Ingredient, ingredient_data.ingredient_id)
                 if not ingredient:
-                    raise HTTPException(status_code=404, detail=f"Ingredient with id {ingredient_data.ingredient_id} not found")
-                if ingredient_data.is_added:  # Добавляем стоимость только для новых ингредиентов
-                    custom_price += float(ingredient.price)
+                    raise HTTPException(status_code=404,
+                                        detail=f"Ingredient with id {ingredient_data.ingredient_id} not found")
+                if ingredient_data.is_added:
+                    if (ingredient_data.count == 0):
+                        ingredient_data.count = 1
+                    custom_price += float(ingredient.price) * ingredient_data.count
 
             order_pizza = OrderPizza(
                 order_id=new_order.id,
@@ -52,44 +54,40 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
                 custom_price=custom_price
             )
             db.add(order_pizza)
-            await db.flush()  # Сохраняем пиццу, чтобы получить её ID
+            await db.flush()
 
-            # Создаём кастомные ингредиенты
             for ingredient_data in pizza_data.ingredients:
                 order_pizza_ingredient = OrderPizzaIngredient(
                     order_pizza_id=order_pizza.id,
                     ingredient_id=ingredient_data.ingredient_id,
-                    is_added=ingredient_data.is_added
+                    is_added=ingredient_data.is_added,
+                    count=ingredient_data.count
                 )
                 db.add(order_pizza_ingredient)
 
-            total_price += custom_price  # Добавляем к общей стоимости
+            total_price += custom_price
 
-        # Обновляем итоговую цену заказа
         new_order.price = total_price
         await db.flush()
 
-        # Коммитим транзакцию
         await db.commit()
 
-        # Обновляем объект заказа, чтобы он содержал все связанные данные
         await db.refresh(new_order)
 
-        # Получаем полный объект заказа с зависимостями
         result = await db.execute(
             select(Order)
             .where(Order.id == new_order.id)
             .options(
                 selectinload(Order.user),
                 selectinload(Order.address),
-                selectinload(Order.pizzas).selectinload(OrderPizza.pizza),
-                selectinload(Order.pizzas).selectinload(OrderPizza.ingredients).selectinload(OrderPizzaIngredient.ingredient)
+                selectinload(Order.pizzas).selectinload(OrderPizza.pizza).selectinload(Pizza.ingredients),
+                selectinload(Order.pizzas).selectinload(OrderPizza.ingredients).selectinload(
+                    OrderPizzaIngredient.ingredient)
             )
         )
         order = result.scalars().first()
         return OrderResponse.from_orm(order)
 
     except Exception as e:
-        # Откатываем транзакцию в случае ошибки
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
