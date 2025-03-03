@@ -20,5 +20,4 @@ class User(Base):
 
     orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
     addresses = relationship("Address", back_populates="user", cascade="all, delete-orphan")
-
     favorite_pizzas = relationship("Pizza", secondary=user_pizza_association, back_populates="liked_by_users")

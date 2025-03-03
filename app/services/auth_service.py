@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer
 from app.core import settings
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,9 +15,10 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(http_bearer
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         role: str = payload.get("role")
-        if email is None or role is None:
+        user_id: int = payload.get("id")  # Извлечение ID пользователя из токена
+        if email is None or role is None or user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return {"email": email, "role": role}
+        return {"email": email, "role": role, "id": user_id}  # Добавляем ID в ответ
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
@@ -47,6 +47,5 @@ async def login_user(db: AsyncSession, email: str, password: str):
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    access_token = create_access_token(data={"sub": user.email, "role": user.role})
+    access_token = create_access_token(data={"sub": user.email, "role": user.role, "id": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
-
