@@ -13,9 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   app:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: steparrik/pizza-flow-backend:latest
     ports:
       - 8000:8000
     environment:
@@ -25,6 +23,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SECRET_KEY: ${SECRET_KEY}
       JWT_EXPIRE_TIME: ${JWT_EXPIRE_TIME}
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
