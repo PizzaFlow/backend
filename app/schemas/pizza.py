@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -14,12 +14,14 @@ class PizzaBase(BaseModel):
 class PizzaResponse(PizzaBase):
     id: int
     ingredients: List[IngredientResponse]
+    photo: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 class PizzaResponseForOrder(PizzaBase):
     id: int
+    photo: str
 
     class Config:
         from_attributes = True

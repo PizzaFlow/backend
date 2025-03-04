@@ -2,13 +2,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from app.core import settings
 from app.core.base import Base
-from app.models.user import User
-from app.models.pizza import Pizza
-from app.models.order import Order
-from app.models.address import Address
-
-
-
 
 DATABASE_URL = settings.DATABASE_URL
 
