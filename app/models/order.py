@@ -20,12 +20,19 @@ class PaymentMethodEnum(str, enum.Enum):
     CASH_ON_DELIVERY = "Наличными при получении"
 
 
+class OrderStatus(str, enum.Enum):
+    CREATED = "Создан"
+    COOKING = "Готовится"
+    DELIVERY = "Доставляется"
+    COMPLETED = "Завершен"
+
+
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    status = Column(String, nullable=False)
+    status = Column(SQLEnum(OrderStatus), nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     address_id = Column(Integer, ForeignKey("addresses.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
