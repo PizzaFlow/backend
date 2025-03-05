@@ -1,10 +1,12 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import User, Pizza, Ingredient, Address
-from app.models.order import Order, OrderPizza, OrderPizzaIngredient
+from app.models.order import Order, OrderPizza, OrderPizzaIngredient, OrderStatus
 from app.schemas.order import OrderCreate, OrderResponse
 
 
@@ -23,7 +25,7 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
         new_order = Order(
             user_id=user_id,
             address_id=order_data.address_id,
-            status="created",
+            status=OrderStatus.CREATED,
             price=0.0,
             delivery_time=order_data.delivery_time,
             payment_method=order_data.payment_method
@@ -91,3 +93,82 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def update_order_status(db: AsyncSession, order_id: int, new_status: OrderStatus) -> OrderResponse:
+    try:
+        order = await db.get(Order, order_id)
+        if not order:
+            raise HTTPException(status_code=404, detail=f"Order with id {order_id} not found")
+
+        order.status = new_status
+        await db.flush()
+
+        await db.commit()
+
+        await db.refresh(order)
+
+        result = await db.execute(
+            select(Order)
+            .where(Order.id == order_id)
+            .options(
+                selectinload(Order.user),
+                selectinload(Order.address),
+                selectinload(Order.pizzas).selectinload(OrderPizza.pizza).selectinload(Pizza.ingredients),
+                selectinload(Order.pizzas).selectinload(OrderPizza.ingredients).selectinload(
+                    OrderPizzaIngredient.ingredient)
+            )
+        )
+
+        updated_order = result.scalars().first()
+        return OrderResponse.from_orm(updated_order)
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update order status: {str(e)}")
+
+
+async def get_all_orders_for_employee(db: AsyncSession) -> List[OrderResponse]:
+    try:
+        result = await db.execute(
+            select(Order)
+            .where(Order.status != OrderStatus.COMPLETED)
+            .options(
+                selectinload(Order.user),
+                selectinload(Order.address),
+                selectinload(Order.pizzas).selectinload(OrderPizza.pizza).selectinload(Pizza.ingredients),
+                selectinload(Order.pizzas).selectinload(OrderPizza.ingredients).selectinload(
+                    OrderPizzaIngredient.ingredient)
+            )
+            .order_by(Order.id)
+        )
+
+        orders = result.scalars().all()
+
+        return [OrderResponse.from_orm(order) for order in orders]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch orders: {str(e)}")
+
+
+async def get_all_orders(db: AsyncSession, user_id: int) -> List[OrderResponse]:
+    try:
+        result = await db.execute(
+            select(Order)
+            .where(Order.user_id == user_id)
+            .options(
+                selectinload(Order.user),
+                selectinload(Order.address),
+                selectinload(Order.pizzas).selectinload(OrderPizza.pizza).selectinload(Pizza.ingredients),
+                selectinload(Order.pizzas).selectinload(OrderPizza.ingredients).selectinload(
+                    OrderPizzaIngredient.ingredient)
+            )
+            .order_by(Order.id)
+        )
+
+        orders = result.scalars().all()
+
+        return [OrderResponse.from_orm(order) for order in orders]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch orders: {str(e)}")

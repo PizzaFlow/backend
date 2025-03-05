@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from app.models.order import DeliveryTimeEnum, PaymentMethodEnum
+from app.models.order import DeliveryTimeEnum, PaymentMethodEnum, OrderStatus
 from app.schemas.address import AddressResponse
 from app.schemas.ingredient import IngredientResponse
 from app.schemas.pizza import PizzaResponseForOrder
@@ -14,6 +14,11 @@ class OrderPizzaIngredientBase(BaseModel):
     ingredient_id: int
     is_added: bool
     count: int
+
+
+class OrderStatusUpdate(BaseModel):
+    order_id: int
+    status: OrderStatus
 
 
 class OrderPizzaIngredientResponse(OrderPizzaIngredientBase):

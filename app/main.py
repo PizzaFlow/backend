@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from app.api.router import router
-from app.core.database import init_db, get_db, get_db_sync
-from sqlalchemy.future import select
 from sqlalchemy import text
+from sqlalchemy.future import select
 
+from app.api.router import router
+from app.core.database import init_db, get_db_sync
 from app.models import Pizza, Ingredient, PizzaIngredient
 
 app = FastAPI()
@@ -12,10 +12,8 @@ app = FastAPI()
 async def startup():
     await init_db()
 
-    # Просто вызываем get_db_sync() как корутину, а не с async with
-    db = await get_db_sync()  # Получаем сессию
+    db = await get_db_sync()
 
-    # Применяем SQL-скрипты, если необходимо
     result = await db.execute(select(Pizza.id).limit(1))
     pizza_id = result.scalars().first()
     if not pizza_id:

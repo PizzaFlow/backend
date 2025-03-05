@@ -1,6 +1,7 @@
+from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from passlib.context import CryptContext
+
 from app.models.user import User
 from app.schemas.user import UserCreate
 
@@ -11,13 +12,17 @@ def hash_password(password: str):
     return pwd_context.hash(password)
 
 
-async def create_user(db: AsyncSession, user: UserCreate):
+async def create_user(db: AsyncSession, user: UserCreate, role: str):
     db_user = User(
         username=user.username,
         email=user.email,
         hashed_password=hash_password(user.password),
         role="CLIENT"
     )
+
+    if role == "EMPLOYEE":
+        db_user.role = "EMPLOYEE"
+
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
