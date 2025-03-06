@@ -29,6 +29,3 @@ jobs:
         run: |
           docker push steparrik/pizza-flow-backend:${{ env.IMAGE_TAG }}
           docker push steparrik/pizza-flow-backend:latest
-
-      - name: Print Image Tag
-        run: echo "Pushed Docker image with tag: ${{ env.IMAGE_TAG }}"
