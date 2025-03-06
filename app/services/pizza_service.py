@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import user_pizza_association
+from app.models import user_pizza_association, Ingredient
 from app.models.pizza import Pizza
 
 
@@ -16,6 +16,11 @@ async def get_all_pizzas_with_ingredients(db: AsyncSession) -> List[Pizza]:
     )
     return result.scalars().all()
 
+async def get_all_ingredients(db: AsyncSession) -> List[Ingredient]:
+    result = await db.execute(
+        select(Ingredient)
+    )
+    return result.scalars().all()
 
 async def get_favorite_pizzas(db: AsyncSession, user_id: int) -> List[Pizza]:
     result = await db.execute(
