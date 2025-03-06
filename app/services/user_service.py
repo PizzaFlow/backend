@@ -1,9 +1,11 @@
+from fastapi import HTTPException, BackgroundTasks
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.user import User
 from app.schemas.user import UserCreate
+from app.services.notification_service import send_email_background
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -13,6 +15,12 @@ def hash_password(password: str):
 
 
 async def create_user(db: AsyncSession, user: UserCreate, role: str):
+    existing_user = await db.execute(
+        select(User).filter((User.email == user.email) | (User.username == user.username))
+    )
+    if existing_user.scalar():
+        raise HTTPException(status_code=400, detail="Пользователь с таким email или username уже существует")
+
     db_user = User(
         username=user.username,
         email=user.email,

@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.models import User, Pizza, Ingredient, Address
 from app.models.order import Order, OrderPizza, OrderPizzaIngredient, OrderStatus
 from app.schemas.order import OrderCreate, OrderResponse
+from app.services.notification_service import send_email_background
 
 
 async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) -> OrderResponse:
@@ -95,7 +96,7 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def update_order_status(db: AsyncSession, order_id: int, new_status: OrderStatus) -> OrderResponse:
+async def update_order_status(db: AsyncSession, order_id: int, new_status: OrderStatus, background_tasks: BackgroundTasks,) -> OrderResponse:
     try:
         order = await db.get(Order, order_id)
         if not order:
@@ -121,6 +122,13 @@ async def update_order_status(db: AsyncSession, order_id: int, new_status: Order
         )
 
         updated_order = result.scalars().first()
+
+
+        if background_tasks:
+            user = order.user
+            subject = f"Обновлен статус заказа № {order_id}"
+            body = f"Статус вашего заказа: {order_id} сменился на {new_status.value}"
+            send_email_background(background_tasks, user.email, subject, body)
         return OrderResponse.from_orm(updated_order)
 
     except Exception as e:
