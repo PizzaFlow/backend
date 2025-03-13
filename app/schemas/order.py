@@ -46,7 +46,7 @@ class OrderPizzaResponse(BaseModel):
 class OrderCreate(BaseModel):
     address_id: int
     pizzas: List[OrderPizzaBase]
-    delivery_time: DeliveryTimeEnum
+    delivery_time: str
     payment_method: PaymentMethodEnum
 
 
@@ -57,7 +57,7 @@ class OrderResponse(BaseModel):
     status: str
     price: float
     created_at: datetime
-    delivery_time: DeliveryTimeEnum
+    delivery_time: str
     pizzas: List[OrderPizzaResponse]
     payment_method: PaymentMethodEnum
 
