@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
-import pytz
 
+import pytz
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 

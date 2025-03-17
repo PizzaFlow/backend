@@ -2,10 +2,8 @@ import asyncio
 
 from fastapi import BackgroundTasks
 from fastapi_mail import FastMail, MessageSchema
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
+
 from app.core.settings import conf
-from pydantic import EmailStr
 
 
 async def send_email(to_email: str, subject: str, body: str):

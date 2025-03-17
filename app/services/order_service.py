@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta
 from typing import List
-import pytz
 
+import pytz
 from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +10,6 @@ from sqlalchemy.orm import selectinload
 from app.models import User, Pizza, Ingredient, Address
 from app.models.order import Order, OrderPizza, OrderPizzaIngredient, OrderStatus, DeliveryTimeEnum
 from app.schemas.order import OrderCreate, OrderResponse
-from app.services.address_service import get_address_by_id
 from app.services.notification_service import send_email_background
 
 

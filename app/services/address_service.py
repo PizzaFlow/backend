@@ -1,8 +1,8 @@
-from fastapi import HTTPException
 from typing import List
 
-from sqlalchemy.future import select
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.models import Address
 from app.schemas.address import AddressBase, AddressResponse

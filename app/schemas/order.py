@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from app.models.order import DeliveryTimeEnum, PaymentMethodEnum, OrderStatus
+from app.models.order import PaymentMethodEnum, OrderStatus
 from app.schemas.address import AddressResponse
 from app.schemas.ingredient import IngredientResponse
 from app.schemas.pizza import PizzaResponseForOrder

@@ -1,11 +1,10 @@
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserEditSchema, UserResponseForRegistration, UserResponse
-from app.services.notification_service import send_email_background
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
