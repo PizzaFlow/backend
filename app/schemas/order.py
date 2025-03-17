@@ -7,7 +7,7 @@ from app.models.order import DeliveryTimeEnum, PaymentMethodEnum, OrderStatus
 from app.schemas.address import AddressResponse
 from app.schemas.ingredient import IngredientResponse
 from app.schemas.pizza import PizzaResponseForOrder
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponseForRegistration
 
 
 class OrderPizzaIngredientBase(BaseModel):
@@ -52,7 +52,7 @@ class OrderCreate(BaseModel):
 
 class OrderResponse(BaseModel):
     id: int
-    user: UserResponse
+    user: UserResponseForRegistration
     address: AddressResponse
     status: str
     price: float

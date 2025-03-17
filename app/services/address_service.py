@@ -37,3 +37,10 @@ async def remove_address(db: AsyncSession, address_id: int, user_id: int):
             raise HTTPException(status_code=404, detail="Address not found")
 
         await db.delete(address)
+
+async def get_address_by_id(db: AsyncSession, pizza_id: int) -> AddressResponse:
+    async with db.begin():
+        stmt = select(Address).where(Address.id == pizza_id)
+        result = await db.execute(stmt)
+        address = result.scalars().one_or_none()
+        return AddressResponse.from_orm(address)

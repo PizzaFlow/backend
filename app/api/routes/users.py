@@ -4,14 +4,16 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.models import User
 from app.schemas.address import AddressBase, AddressResponse
 from app.schemas.order import OrderResponse
 from app.schemas.pizza import PizzaResponse
+from app.schemas.user import UserEditSchema, UserResponse
 from app.services.address_service import added_new_address, get_all_addresses, remove_address
 from app.services.auth_service import require_client
 from app.services.order_service import get_all_orders
 from app.services.pizza_service import get_favorite_pizzas, add_favorite_pizza, delete_favorite_pizza
-from app.services.user_service import get_user_by_id
+from app.services.user_service import get_user_by_id, path_edit_user
 
 router = APIRouter(
     prefix="/users",
@@ -19,12 +21,17 @@ router = APIRouter(
 )
 
 
-@router.get("/me", dependencies=[Depends(require_client)])
+@router.get("/me", dependencies=[Depends(require_client)], response_model=UserResponse)
 async def get_user(db: AsyncSession = Depends(get_db),
                    user_data: dict = Depends(require_client)):
     user_id = user_data["id"]
     return await get_user_by_id(db, user_id)
 
+@router.patch("/me", dependencies=[Depends(require_client)], response_model=UserResponse)
+async def edit_user(user_data: UserEditSchema,
+                    db: AsyncSession = Depends(get_db),
+                    current_user: User = Depends(require_client)):
+    return await path_edit_user(db, user_data, current_user["id"])
 
 @router.post("/address/", dependencies=[Depends(require_client)])
 async def added_address(

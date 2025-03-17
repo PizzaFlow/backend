@@ -10,10 +10,12 @@ from sqlalchemy.orm import selectinload
 from app.models import User, Pizza, Ingredient, Address
 from app.models.order import Order, OrderPizza, OrderPizzaIngredient, OrderStatus, DeliveryTimeEnum
 from app.schemas.order import OrderCreate, OrderResponse
+from app.services.address_service import get_address_by_id
 from app.services.notification_service import send_email_background
 
 
-async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) -> OrderResponse:
+async def create_order(db: AsyncSession, order_data: OrderCreate,
+                       user_id: int, background_tasks: BackgroundTasks) -> OrderResponse:
     try:
         user = await db.get(User, user_id)
         if not user:
@@ -118,7 +120,22 @@ async def create_order(db: AsyncSession, order_data: OrderCreate, user_id: int) 
             )
         )
         order = result.scalars().first()
+        order_id = order.id
+
+        stmt = select(Address).where(Address.id == order_data.address_id)
+        result = await db.execute(stmt)
+        address = result.scalars().one_or_none()
+
         order.delivery_time = order.delivery_time.strftime("%H:%M")
+
+
+        if background_tasks:
+            user = order.user
+            subject = f"Создан заказ № {order_id}"
+            body = f"Статус вашего заказа: {order.status.value}\nБудет доставлено к {order.delivery_time} по адрессу: г.{address.city}, ул.{address.street}, д.{address.house}, кв.{address.apartment}"
+            send_email_background(background_tasks, user.email, subject, body)
+
+
         return OrderResponse.from_orm(order)
 
     except Exception as e:
@@ -164,7 +181,7 @@ async def get_available_delivery_times(current_time: datetime, db: AsyncSession)
         return []
 
     return delivery_times
-async def update_order_status(db: AsyncSession, order_id: int, new_status: OrderStatus, background_tasks: BackgroundTasks,) -> OrderResponse:
+async def update_order_status(db: AsyncSession, order_id: int, new_status: OrderStatus, background_tasks: BackgroundTasks) -> OrderResponse:
     try:
         order = await db.get(Order, order_id)
         if not order:
@@ -197,6 +214,9 @@ async def update_order_status(db: AsyncSession, order_id: int, new_status: Order
             subject = f"Обновлен статус заказа № {order_id}"
             body = f"Статус вашего заказа: {order_id} сменился на {new_status.value}"
             send_email_background(background_tasks, user.email, subject, body)
+
+        updated_order.delivery_time = updated_order.delivery_time.strftime("%H:%M")
+
         return OrderResponse.from_orm(updated_order)
 
     except Exception as e:
