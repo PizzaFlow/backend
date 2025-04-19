@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.future import select
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import router
 from app.core.database import init_db, get_db_sync
 from app.models import Pizza, Ingredient, PizzaIngredient
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 @app.on_event("startup")
 async def startup():
